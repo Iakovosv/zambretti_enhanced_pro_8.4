@@ -1,0 +1,168 @@
+type: vertical-stack
+cards:
+  # Κύρια Πρόβλεψη
+  - type: tile
+    entity: sensor.zambretti_enhanced_pro_8_4
+    name: 🌦️ Zambretti Pro 8.7
+    icon: mdi:weather-partly-cloudy
+    vertical: false
+    state_content:
+      - state
+      - forecast_atmosphere
+
+  # Markdown με αναλυτικά δεδομένα
+  - type: markdown
+    title: 📊 Πλήρης Ανάλυση &ρού
+    content: >
+      {% set e = 'sensor.zambretti_enhanced_pro_8_4' %}
+      {% set state_val = states(e) %}
+
+      {% if state_val not in ['unknown','unavailable','none',''] %}
+
+      ### 🌤️ Κατάσταση & Τάσεις
+      
+      **Κύρια Πρόγνωση:** `{{ state_val }}`  
+      **Ατμόσφαιρα:** `{{ state_attr(e,'forecast_atmosphere') }}`  
+      **Καθεστώς:** `{{ state_attr(e,'weather_regime') }}`  
+      **Διάρκεια:** `{{ state_attr(e,'regime_duration_h') }} h`  
+      **Dwell:** `{{ state_attr(e,'dwell_time_min') }} min`
+
+      ---
+
+      ### ☀️ Ηλιακή Θέση (v8.7)
+      
+      **Ύψος Ήλιου:** `{{ state_attr(e,'sun_elevation') }}°`  
+      **Αζιμούθιο:** `{{ state_attr(e,'sun_azimuth') }}°`  
+      **Αποκλεισμός Βουνών:** `{{ state_attr(e,'mountain_blocking') }}°`  
+      
+      **Ηλιακή Ακτινοβολία:** `{{ state_attr(e,'solar_radiation') }} W/m²`  
+      **Solar Ratio:** `{{ state_attr(e,'solar_ratio') }}`  
+      **Αναμενόμενο Clear Sky:** `{{ state_attr(e,'expected_clear_sky') }} W/m²`
+
+      ---
+
+      ### 📉 Πίεση
+      
+      **MSLP:** `{{ state_attr(e,'pressure_mslp') }} hPa`  
+      **Trend 3h:** `{{ state_attr(e,'trend_3h') }} hPa`  
+      **Curvature:** `{{ state_attr(e,'pressure_curvature') }}`
+
+      ---
+
+      ### ⚡ Pressure Acceleration
+      
+      **Interpretation:** `{{ state_attr(e,'acceleration_interpretation') }}`  
+      **Magnitude:** `{{ state_attr(e,'acceleration_magnitude') }}`  
+      **Quality:** `{{ state_attr(e,'acceleration_quality') }}`
+
+      ---
+
+      ### 🌡️ Θερμοκρασία / Υγρασία
+      
+      **Temp:** `{{ state_attr(e,'temperature') }}°C`  
+      **Humidity:** `{{ state_attr(e,'humidity') }}%`  
+      **Dewpoint:** `{{ state_attr(e,'dewpoint') }}°C`  
+      **DP Depression:** `{{ state_attr(e,'dp_depression') }}°C`
+
+      ---
+
+      ### 🌧️ Βροχόμετρο
+      
+      **Rain Probability:** **`{{ state_attr(e,'rain_probability') }}%`** 
+      {% if state_attr(e,'rain_event') %} 🌧️ ΕΝΕΡΓΟ!{% endif %}
+
+      ---
+
+      ### 💨 Άνεμος
+      
+      **Speed:** `{{ state_attr(e,'wind_speed_kmh') }} km/h`  
+      **Dir:** `{{ state_attr(e,'wind_dir') }}°`  
+      **Sea breeze:** `{{ state_attr(e,'sea_breeze') }}`
+
+      ---
+
+      ### 🏔️ Sky State
+      
+      **Clear Sky:** `{{ state_attr(e,'sky_clear') }}`  
+      **Confidence:** `{{ state_attr(e,'sky_confidence') }}`  
+      **Confidence Raw:** `{{ state_attr(e,'sky_confidence_raw') }}`  
+      **Confidence Persistent:** `{{ state_attr(e,'sky_confidence_persistent') }}`
+
+      ---
+
+      ### 📍 Τοποθεσία
+      
+      **Lat:** `{{ state_attr(e,'lat') }}`  
+      **Lon:** `{{ state_attr(e,'lon') }}`  
+      **Elevation:** `{{ state_attr(e,'elevation') }} m`
+
+      ---
+
+      ### 🕒 Πληροφορίες
+      
+      **Έκδοση:** `{{ state_attr(e,'version') }}`  
+      **Timestamp:** `{{ state_attr(e,'timestamp') }}`
+
+      {% else %}
+      ⚠️ Αναμονή για δεδομένα αισθητήρων...
+      {% endif %}
+
+  # gauges row
+  - type: horizontal-stack
+    cards:
+      - type: gauge
+        name: 🌧️ Βροχή
+        entity: sensor.zambretti_enhanced_pro_8_4
+        min: 0
+        max: 100
+        severity:
+          green: 0
+          yellow: 30
+          red: 70
+        attribute: rain_probability
+
+      - type: gauge
+        name: ☀️ Sky Confidence
+        entity: sensor.zambretti_enhanced_pro_8_4
+        min: 0
+        max: 1
+        severity:
+          green: 0.75
+          yellow: 0.5
+          red: 0.3
+        attribute: sky_confidence
+
+      - type: gauge
+        name: 🌡️ Score
+        entity: sensor.zambretti_enhanced_pro_8_4
+        min: 0
+        max: 100
+        severity:
+          green: 20
+          yellow: 50
+          red: 80
+        attribute: score
+
+  # Indicators row
+  - type: glance
+    title: 📊 Βασικοί Δείκτες
+    show_state: true
+    entities:
+      - entity: sensor.zambretti_enhanced_pro_8_4
+        name: Regime
+        attribute: weather_regime
+      - entity: sensor.zambretti_enhanced_pro_8_4
+        name: Rain %
+        attribute: rain_probability
+      - entity: sensor.zambretti_enhanced_pro_8_4
+        name: Sky Conf
+        attribute: sky_confidence
+      - entity: sensor.zambretti_enhanced_pro_8_4
+        name: Accel
+        attribute: acceleration_interpretation
+      - entity: sensor.zambretti_enhanced_pro_8_4
+        name: Sea Breeze
+        attribute: sea_breeze
+      - entity: sensor.zambretti_enhanced_pro_8_4
+        name: Sun Elev
+        attribute: sun_elevation
