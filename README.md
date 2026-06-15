@@ -143,10 +143,19 @@ SMOOTHING_FACTOR = 0.25
 
 ### Κύριος Αισθητήρας
 ```
-sensor.zambretti_enhanced_pro_8_2
+sensor.zambretti_enhanced_pro_8_4
 ```
 
-### Attributes
+### v8.7 Νέα Attributes
+
+| Attribute | Περιγραφή | Μονάδα |
+|-----------|-----------|--------|
+| `sun_elevation` | Ύψος ήλιου (°) | ° |
+| `sun_azimuth` | Αζιμούθιο ήλιου (°) | ° |
+| `mountain_blocking` | Αποκλεισμός βουνών | ° |
+| `expected_clear_sky` | Αναμενόμενη ακτινοβολία | W/m² |
+
+### Πλήρης Λίστα Attributes
 
 | Attribute | Περιγραφή | Μονάδα |
 |-----------|-----------|--------|
@@ -162,12 +171,29 @@ sensor.zambretti_enhanced_pro_8_2
 | `wind_speed_kmh` | Ταχύτητα ανέμου | km/h |
 | `wind_dir` | Διεύθυνση ανέμου | ° |
 | `sea_breeze` | Ανίχνευση αύρας | true/false |
+| `sea_bearing` | Κατεύθυνση αύρας | ° |
 | `solar_radiation` | Ηλιακή ακτινοβολία | W/m² |
 | `solar_ratio` | Λόγος ηλιακής/αναμενόμενης | - |
+| `expected_clear_sky` | Αναμενόμενο clear sky | W/m² |
+| `sun_elevation` | Ύψος ήλιου | ° |
+| `sun_azimuth` | Αζιμούθιο ήλιου | ° |
+| `mountain_blocking` | Αποκλεισμός βουνών | ° |
 | `sky_clear` | Καθαρός ουρανός | true/false |
 | `sky_confidence` | Εμπιστοσύνη ουρανού | 0-1 |
+| `sky_confidence_raw` | Εμπιστοσύνη (raw) | 0-1 |
+| `sky_confidence_persistent` | Εμπιστοσύνη (smoothed) | 0-1 |
 | `rain_probability` | Πιθανότητα βροχής | % |
+| `rain_event` | Ενεργό βροχής event | true/false |
+| `score` | Σκορ καιρού | 0-100 |
 | `weather_regime` | Καθεστώς καιρού | - |
+| `regime_duration_h` | Διάρκεια καθεστώτος | h |
+| `dwell_time_min` | Χρόνος παραμονής | min |
+| `acceleration_interpretation` | Ερμηνεία επιτάχυνσης | - |
+| `acceleration_magnitude` | Μέγεθος επιτάχυνσης | - |
+| `acceleration_quality` | Ποιότητα επιτάχυνσης | 0-1 |
+| `lat` | Γεωγραφικό πλάτος | ° |
+| `lon` | Γεωγραφικό μήκος | ° |
+| `elevation` | Υψόμετρο | m |
 | `version` | Έκδοση κώδικα | - |
 | `timestamp` | Χρονοσημαντήρα | ISO |
 
@@ -221,6 +247,17 @@ Td = (B·γ) / (A - γ)
 ```
 P_rain = min(100, score × 1.1 × modifiers)
 ```
+
+---
+
+## 📱 Lovelace Dashboard
+
+Δες το αρχείο `lovelace_dashboard.yaml` για πλήρη κάρτα Home Assistant.
+
+### Χρήση:
+1. Αντέγραψε το περιεχόμενο του `lovelace_dashboard.yaml`
+2. Πήγαινε στο Home Assistant → Overview → Edit Dashboard
+3. Add Card → Manual Card → Paste the YAML
 
 ---
 
