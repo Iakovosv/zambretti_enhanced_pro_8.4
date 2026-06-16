@@ -160,40 +160,42 @@ def get_solar_position_accurate(lat: float, lon: float, dt: datetime) -> dict:
 
 def _get_local_horizon_blocking(lat: float, lon: float, azimuth: float) -> float:
     """
-    v8.8: Πλήρες SRTM-style horizon profile
-    Υπολογίζει τον αποκλεισμό βάσει θέσης ήλιου (αζιμούθιο)
-    Επιστρέφει γωνία αποκλεισμού σε μοίρες (0 αν ο ήλιος δεν είναι πίσω από βουνό)
+    v8.9: Horizon blocking με εύκολη διαμόρφωση
+    
+    Για να προσθέσεις βουνά της περιοχής σου:
+    1. Βρες τις συντεταγμένες της κορυφής (Google Maps > Βουνό)
+    2. Βρες το ύψος (Google: "Βουνό ύψος")
+    3. Πρόσθεσε στο USER_MOUNTAINS παρακάτω
     """
-    # Βάση δεδομένων Ελληνικών βουνών (κορυφές)
-    # Μορφή: (lat, lon, height, name, spread_degrees)
-    MOUNTAINS_DB = [
-        # Αττική - Υμηττός (κορυφή ΒΑ)
-        (37.95, 23.80, 1026, "Υμηττός", 25),
-        # Αττική - Πάρνηθα (κορυφή)
-        (38.05, 23.73, 1410, "Πάρνηθα", 30),
-        # Αττική - Αιγάλεω
-        (38.0, 23.57, 487, "Αιγάλεω", 15),
-        # Θεσσαλονίκη - Χορτιάτης
-        (40.60, 22.95, 1201, "Χορτιάτης", 22),
-        # Πάτρα - Παναχαϊκό
-        (38.22, 21.72, 1926, "Παναχαϊκό", 25),
-        # Πάτρα - Άρτεμις
-        (38.28, 21.78, 719, "Άρτεμις", 15),
-        # Λάρισα - Όλυμπος
-        (40.0, 22.35, 2918, "Όλυμπος", 40),
-        # Ιωάννινα - Γράμμος
-        (40.2, 20.9, 2520, "Γράμμος", 30),
-        # Κρήτη - Ψηλορείτης
-        (35.27, 24.93, 2456, "Ψηλορείτης", 20),
-        # Κρήτη - Λευκά Όρη
-        (35.40, 24.0, 2452, "Λευκά Όρη", 22),
+    # ============================================================
+    # ΔΙΟΡΘΩΣΕ ΤΑ ΒΟΥΝΑ ΤΗΣ ΠΕΡΙΟΧΗΣ ΣΟΥ ΕΔΩ!
+    # ============================================================
+    # Μορφή: (lat, lon, height, spread_degrees)
+    # spread = ±μοίρες που επηρεάζει το βουνό (π.χ. 20 = ±20°)
+    
+    USER_MOUNTAINS = [
+        # Παράδειγμα - Ιλιούπολη (άφησε κενό για να χρησιμοποιηθεί η DB):
+        # (37.938, 23.84, 1026, 35),  # Υμηττός
     ]
+    
+    # Βάση δεδομένων Ελληνικών βουνών
+    MOUNTAINS_DB = [
+        (37.938, 23.84, 1026, 35),  # Υμηττός (spread=35° για πρωινές ώρες)
+        (38.05, 23.73, 1410, 30),     # Πάρνηθα
+        (38.0, 23.57, 487, 15),       # Αιγάλεω
+        (40.60, 22.95, 1201, 22),    # Χορτιάτης
+        (38.22, 21.72, 1926, 25),    # Παναχαϊκό
+        (40.0, 22.35, 2918, 40),     # Όλυμπος
+        (35.27, 24.93, 2456, 20),    # Ψηλορείτης
+        (35.40, 24.0, 2452, 22),     # Λευκά Όρη
+    ]
+    
+    # Χρήση user mountains αν έχουν οριστεί
+    mountains = USER_MOUNTAINS if USER_MOUNTAINS else MOUNTAINS_DB
     
     max_blocking = 0.0
     
-    for mountain in MOUNTAINS_DB:
-        m_lat, m_lon, height, name, spread = mountain
-        
+    for m_lat, m_lon, height, spread in mountains:
         # Υπολογισμός απόστασης (Haversine)
         R = 6371
         dlat = math.radians(m_lat - lat)
@@ -201,7 +203,7 @@ def _get_local_horizon_blocking(lat: float, lon: float, azimuth: float) -> float
         a = math.sin(dlat/2)**2 + math.cos(math.radians(lat)) * math.cos(math.radians(m_lat)) * math.sin(dlon/2)**2
         distance = R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
         
-        if distance > 100 or distance < 1:  # Εκτός εμβέλειας ή πάνω στο βουνό
+        if distance > 100 or distance < 1:
             continue
         
         # Υπολογισμός αζιμουθίου προς το βουνό
@@ -212,21 +214,17 @@ def _get_local_horizon_blocking(lat: float, lon: float, azimuth: float) -> float
         y = math.cos(lat_r) * math.sin(m_lat_r) - math.sin(lat_r) * math.cos(m_lat_r) * math.cos(dlon_r)
         mountain_az = (math.degrees(math.atan2(x, y)) + 360) % 360
         
-        # ΕΛΕΓΧΟΣ: Ο ήλιος πρέπει να είναι προς την κατεύθυνση του βουνού
+        # Έλεγχος: ο ήλιος πρέπει να είναι προς την κατεύθυνση του βουνού
         az_diff = abs(azimuth - mountain_az)
         if az_diff > 180:
             az_diff = 360 - az_diff
         
-        # Μόνο αποκλεισμός αν ο ήλιος είναι κοντά στο βουνό (±spread)
         if az_diff > spread:
             continue
         
         # Υπολογισμός γωνίας αποκλεισμού
         base_angle = math.degrees(math.atan(height / (distance * 1000)))
-        
-        # Μείωση αν ο ήλιος είναι στο άκρο του spread
         direction_factor = 1 - (az_diff / spread) * 0.5
-        
         blocking = base_angle * direction_factor
         max_blocking = max(max_blocking, blocking)
     
@@ -1168,7 +1166,7 @@ def run():
             "elevation": elev,
             
             # === Version ===
-            "version": "8.8",
+            "version": "8.9",
             
             # === Timestamp ===
             "timestamp": now.isoformat()
