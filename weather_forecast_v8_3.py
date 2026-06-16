@@ -131,7 +131,7 @@ def get_solar_position_accurate(lat: float, lon: float, dt: datetime) -> dict:
     ra = math.atan2(math.cos(obliquity_rad) * math.sin(Lrad), math.cos(Lrad))
     declination = math.asin(math.sin(obliquity_rad) * math.sin(Lrad))
     
-    GMST = 280.4606 + 360.9856474 * (JD - 2451545.0) % 360
+    GMST = (280.4606 + 360.9856474 * (JD - 2451545.0)) % 360
     LST = (GMST + lon) % 360
     ha = math.radians(LST - math.degrees(ra))
     
@@ -1082,7 +1082,7 @@ def run():
     
     # Output
     state.set(
-        "sensor.zambretti_enhanced_pro_8_2",
+        "sensor.zambretti_enhanced_pro_8_4",
         value=fc_primary,
         new_attributes={
             # === Core Forecast ===
