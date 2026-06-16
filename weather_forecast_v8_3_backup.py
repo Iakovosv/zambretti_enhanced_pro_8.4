@@ -114,46 +114,48 @@ def _calculate_julian_date(dt: datetime) -> float:
 
 def get_solar_position_accurate(lat: float, lon: float, dt: datetime) -> dict:
     """
-    v8.8: Διορθωμένος υπολογισμός θέσης ήλιου
-    Με timezone support για Greece (UTC+3)
+    Ακριβής υπολογισμός θέσης ήλιου (NOAA SPA)
     """
-    day_of_year = dt.timetuple().tm_yday
+    JD = _calculate_julian_date(dt)
+    n = JD - 2451545.0
+    Jstar = n - lon / 360.0
+    M = (357.5291 + 0.98560028 * Jstar) % 360
+    Mrad = math.radians(M)
     
-    # Solar declination (απλοποιημένη)
-    decl = 23.45 * math.sin(math.radians(360/365 * (day_of_year - 81)))
-    decl_rad = math.radians(decl)
+    C = 1.9148 * math.sin(Mrad) + 0.0200 * math.sin(2*Mrad) + 0.0003 * math.sin(3*Mrad)
+    L = (M + C + 180 + 102.9372) % 360
+    Lrad = math.radians(L)
+    obliquity = 23.4393 - 0.0000004 * n
+    obliquity_rad = math.radians(obliquity)
     
-    # Timezone offset (Greece = UTC+3 θερινή ώρα)
-    tz_offset = 3.0
+    ra = math.atan2(math.cos(obliquity_rad) * math.sin(Lrad), math.cos(Lrad))
+    declination = math.asin(math.sin(obliquity_rad) * math.sin(Lrad))
     
-    # Solar noon = 12:00 + tz_offset - longitude/15
-    solar_noon = 12.0 + tz_offset - lon/15
-    
-    # Hour angle
-    hour_angle = (dt.hour + dt.minute/60 - solar_noon) * 15
-    ha_rad = math.radians(hour_angle)
+    GMST = (280.4606 + 360.9856474 * (JD - 2451545.0)) % 360
+    LST = (GMST + lon) % 360
+    ha = math.radians(LST - math.degrees(ra))
     
     lat_rad = math.radians(lat)
+    cos_zenith = (math.sin(lat_rad) * math.sin(declination) + 
+                  math.cos(lat_rad) * math.cos(declination) * math.cos(ha))
+    zenith = math.degrees(math.acos(max(-1, min(1, cos_zenith))))
+    elevation = 90 - zenith
     
-    # Solar Elevation
-    sin_alt = (math.sin(lat_rad) * math.sin(decl_rad) + 
-               math.cos(lat_rad) * math.cos(decl_rad) * math.cos(ha_rad))
-    elevation = math.degrees(math.asin(max(-1, min(1, sin_alt))))
-    
-    # Solar Azimuth
-    zenith_rad = math.radians(max(1, 90 - elevation))
-    cos_az = (math.sin(decl_rad) - math.sin(lat_rad) * math.cos(zenith_rad)) / \
-             (math.cos(lat_rad) * math.sin(zenith_rad))
-    cos_az = max(-1, min(1, cos_az))
-    azimuth = math.degrees(math.acos(cos_az))
-    
-    if hour_angle > 0:
-        azimuth = 360 - azimuth
+    try:
+        cos_az = (math.sin(declination) - math.sin(lat_rad) * cos_zenith) / \
+                 (math.cos(lat_rad) * math.sin(math.radians(max(0.1, 90 - elevation))))
+        cos_az = max(-1, min(1, cos_az))
+        az = math.degrees(math.acos(cos_az))
+        if ha > 0:
+            az = 360 - az
+    except:
+        az = 0
     
     return {
         "elevation": elevation,
-        "azimuth": azimuth % 360,
-        "declination": decl,
+        "azimuth": az % 360,
+        "zenith": zenith,
+        "declination": math.degrees(declination),
         "is_above_horizon": elevation > 0
     }
 
@@ -1158,7 +1160,7 @@ def run():
             "elevation": elev,
             
             # === Version ===
-            "version": "8.8",
+            "version": "8.7",
             
             # === Timestamp ===
             "timestamp": now.isoformat()
